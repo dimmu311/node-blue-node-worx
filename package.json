@@ -1,0 +1,14 @@
+{
+  "name": "node-blue-node-worx",
+  "version": "1.0.0",
+  "description": "This package provides a node for Node-BLUE to communicate with Worx devices.",
+  "homepage": "https://github.com/dimmu311/node-blue-node-worx",
+  "node-blue": {
+    "maxThreadCounts": {
+      "worx": 1
+    },
+    "nodes": {
+      "worx": "worx.s.php"
+    }
+  }
+}

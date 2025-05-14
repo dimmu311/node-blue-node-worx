@@ -1,0 +1,60 @@
+<script type="text/x-red" data-template-name="worx">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="worx.label.name"></span></label>
+        <input type="text" id="node-input-name" data-i18n="[placeholder]worx.label.name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-email"><i class="fa fa-user"></i> <span data-i18n="worx.label.email"></span></label>
+        <input type="text" id="node-input-email" data-i18n="[placeholder]worx.label.email">
+    </div>
+    <div class="form-row">
+        <label for="node-input-password"><i class="fa fa-key"></i> <span data-i18n="worx.label.password"></span></label>
+        <input type="text" id="node-input-password" data-i18n="[placeholder]worx.label.password">
+    </div>
+</script>
+<script type="text/javascript">
+    RED.nodes.registerType('worx',{
+        color:"#FF6064",
+        category: 'smarthome',
+        defaults: {
+            name: {value:""},
+            email: {value:"", required: true},
+        },
+        inputs:2,
+        inputInfo: [
+	        {
+                label: "getProductItems",
+                types: ["bool"]
+            },
+            {
+                label: "setValue",
+                types: ["struct"]
+            },
+        ],
+        outputs:2,
+        outputInfo: [
+	        {
+                label: "productItems",
+                types: ["struct"]
+            },
+            {
+                label: "setValue",
+                types: ["bool"]
+            },
+        ],
+        icon: "worx.png",
+        label: function() {
+            if(this.name) return this.name;
+            return "worx";
+        },
+        oneditprepare: function () {
+            RED.comms.homegear().invoke("getNodeData", function(data) {$("#node-input-password").val(data.result)}, this.id, "user-password");
+            },
+        oneditsave: function() {
+            var password = $.trim($("#node-input-password").val());
+            if(password != "*") {
+                RED.comms.homegear().invoke("setNodeData", null, this.id, "user-password", password);
+            }
+        }
+    });
+</script>
