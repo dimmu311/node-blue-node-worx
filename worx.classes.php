@@ -8,6 +8,7 @@ class WorxSettings
 {
 	public $email = '';
     public $password = '';
+    public $pollintervall = '';
     public $clientId = '';
     public $nodeId = '';
 }
@@ -20,6 +21,8 @@ class WorxRest
     private $accessToken = '';
     private $refreshToken = '';
     private $tokenExpiresAt = '';
+
+    private $nextPollTime = NULL;
     
     //mqtt vars
     private $mqttClient = NULL;
@@ -29,12 +32,21 @@ class WorxRest
         HomegearNodeBase::log(4, '__construct');
         $this->settings = $settings;
 
+        if($this->settings->pollintervall < 60){
+            $this->settings->pollintervall = 60;
+            HomegearNodeBase::log(2, 'pollintervall is not set or is set to low. setting to min value of 60');
+        }
+
+
         $this->connectionSettings = (new \PhpMqtt\Client\ConnectionSettings)
             ->setUseTls(true)
             ->setTlsSelfSignedAllowed(true)
             ->setTlsVerifyPeer(true)
             //->setUsername($token)
             ->setTlsAlpn('mqtt');
+
+        $this->nextPollTime = new DateTime();
+        $this->nextPollTime->add(new DateInterval('PT'.$this->settings->pollintervall.'S'));
     }
     
     public function setValue($msg){
@@ -192,6 +204,18 @@ class WorxRest
         }
     }
 
+    public function needToPoll(){
+        HomegearNodeBase::log(4, 'needToPoll');
+        $date = new DateTime();
+        if($this->nextPollTime->getTimestamp() > $date->getTimestamp()) return; 
+        
+        $this->nextPollTime = new DateTime();
+        $this->nextPollTime->add(new DateInterval('PT'.$this->settings->pollintervall.'S'));
+        
+        $this->getProductItemsMore();
+        return true;
+    }
+
     public function checkToken(){
         HomegearNodeBase::log(4, 'checkToken');
         if(!$this->tokenExpiresAt) {
@@ -208,7 +232,52 @@ class WorxRest
         }
         return true;
     }
+    public function getUsersMe(){
+        HomegearNodeBase::log(4, 'getUsersMe');
+        if(!$this->checkToken()) return false;
+        
+        $url = 'https://api.worxlandroid.com/api/v2/users/me';
+        $responseCode = 0;
+        $result = $this->curlRequest($url, 'GET', 'application/json', '', $this->accessToken, $responseCode);
 
+        if($result === false || $responseCode == 0){
+            HomegearNodeBase::log(2, 'Unknown error get product items. (response code '.$responseCode.'): '.$result);
+            return false;
+        }
+        else if($responseCode == 200){
+            if(is_string($result)){
+                HomegearNodeBase::log(4, 'Successfully get users me. (response code '.$responseCode.'): '.$result);
+                return true;
+            }
+        }
+        else{
+            HomegearNodeBase::log(2, 'Error get users me (response code '.$responseCode.'): '.$result);
+            return false;
+        }
+    }
+    public function getProducts(){
+        HomegearNodeBase::log(4, 'getProducts');
+        if(!$this->checkToken()) return false;
+        
+        $url = 'https://api.worxlandroid.com/api/v2/products';
+        $responseCode = 0;
+        $result = $this->curlRequest($url, 'GET', 'application/json', '', $this->accessToken, $responseCode);
+
+        if($result === false || $responseCode == 0){
+            HomegearNodeBase::log(2, 'Unknown error get product items. (response code '.$responseCode.'): '.$result);
+            return false;
+        }
+        else if($responseCode == 200){
+            if(is_string($result)){
+                HomegearNodeBase::log(4, 'Successfully get products. (response code '.$responseCode.'): '.$result);
+                return true;
+            }
+        }
+        else{
+            HomegearNodeBase::log(2, 'Error get products (response code '.$responseCode.'): '.$result);
+            return false;
+        }
+    }
     public function getProductItems(){
         HomegearNodeBase::log(4, 'getProductItems');
         if(!$this->checkToken()) return false;
@@ -234,11 +303,42 @@ class WorxRest
             return false;
         }
     }
-    /*
-    'https://api.worxlandroid.com/api/v2/users/me'
-    'https://api.worxlandroid.com/api/v2/products'
-    'https://api.worxlandroid.com/api/v2/product-items'
-    'https://api.worxlandroid.com/api/v2/product-items/{serialno}?status=1'
-    'https://api.worxlandroid.com/api/v2/product-items/{serialno}/activity-log'
-    */
+
+    public function getProductItemsMore(){
+        HomegearNodeBase::log(4, 'getProductItemsMore');
+        if(!$this->checkToken()) return false;
+        if(!$this->productItems) $this->getProductItems();
+        foreach ($this->productItems as $key => $productItem){
+
+            $serialNr = $productItem['serial_number'];
+
+            $url = 'https://api.worxlandroid.com/api/v2/product-items/'.$serialNr.'?status=1';
+            $responseCode = 0;
+            $result = $this->curlRequest($url, 'GET', 'application/json', '', $this->accessToken, $responseCode);
+
+            if($result === false || $responseCode == 0) HomegearNodeBase::log(2, 'Unknown error get product items status. (response code '.$responseCode.'): '.$result);
+            else if($responseCode == 200){
+                if(is_string($result)){
+                    $status=json_decode($result, true);
+                    \Homegear\Homegear::nodeOutput($this->settings->nodeId, 2, array('payload' => $status));
+                    HomegearNodeBase::log(4, 'Successfully get product items status. (response code '.$responseCode.'): '.$result);
+                }
+            }
+            else HomegearNodeBase::log(2, 'Error get product items status (response code '.$responseCode.'): '.$result);
+           
+            $url = 'https://api.worxlandroid.com/api/v2/product-items/'.$serialNr.'/activity-log';
+            $responseCode = 0;
+            $result = $this->curlRequest($url, 'GET', 'application/json', '', $this->accessToken, $responseCode);
+
+            if($result === false || $responseCode == 0) HomegearNodeBase::log(2, 'Unknown error get product items activity. (response code '.$responseCode.'): '.$result);
+            else if($responseCode == 200){
+                if(is_string($result)){
+                    $activity=json_decode($result, true);
+                    \Homegear\Homegear::nodeOutput($this->settings->nodeId, 3, array('payload' => $activity));
+                    HomegearNodeBase::log(4, 'Successfully get product items activity. (response code '.$responseCode.'): '.$result);
+                }
+            }
+            else HomegearNodeBase::log(2, 'Error get product items activity(response code '.$responseCode.'): '.$result);
+        }
+    }
 }

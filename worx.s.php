@@ -14,6 +14,7 @@ $restThread = function(string $scriptId, string $nodeId, array $worxSettings, Ch
     $settings = new WorxSettings();
     $settings->email = $worxSettings['email'];
     $settings->password = $worxSettings['password'];
+    $settings->pollintervall = $worxSettings['pollintervall'];
     $settings->clientId = '013132A8-DB34-4101-B993-3C8348EA0EBC';
     $settings->nodeId = $nodeId;
 
@@ -60,6 +61,7 @@ $restThread = function(string $scriptId, string $nodeId, array $worxSettings, Ch
             $nextTo = rand(50, 70);
 
             $worxRest->checkToken();
+            $worxRest->needToPoll();
         }
         catch(Events\Error\Timeout $ex){
             $i++;
@@ -97,13 +99,11 @@ class HomegearNode extends HomegearNodeBase
         $worxSettings = array();
         $worxSettings['email'] = $this->nodeInfo['info']['email'];
         $worxSettings['password'] = $this->getNodeData('user-password');
+        $worxSettings['pollintervall'] = $this->nodeInfo['info']['pollintervall'];
         $this->mainRuntime = new Runtime();
         $this->mainHomegearChannel = Channel::make('mainHomegearChannelNode'.$nodeId, Channel::Infinite);
         global $restThread;
         $this->mainFuture = $this->mainRuntime->run($restThread, [$scriptId, $nodeId, $worxSettings, $this->mainHomegearChannel]);
-        HomegearNodeBase::log(4, gettype($this->mainFuture));
-        HomegearNodeBase::log(4, gettype($restThread));
-       
         return true;
     }
 

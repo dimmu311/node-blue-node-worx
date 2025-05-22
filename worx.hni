@@ -11,6 +11,10 @@
         <label for="node-input-password"><i class="fa fa-key"></i> <span data-i18n="worx.label.password"></span></label>
         <input type="text" id="node-input-password" data-i18n="[placeholder]worx.label.password">
     </div>
+    <div class="form-row">
+        <label for="node-input-pollintervall"><i class="fa fa-clock-o"></i> <span data-i18n="worx.label.pollintervall"></span></label>
+        <input type="text" id="node-input-pollintervall" data-i18n="[placeholder]worx.label.pollintervall">
+    </div>
 </script>
 <script type="text/javascript">
     RED.nodes.registerType('worx',{
@@ -19,6 +23,7 @@
         defaults: {
             name: {value:""},
             email: {value:"", required: true},
+            pollintervall: {value:"60"},
         },
         inputs:2,
         inputInfo: [
@@ -31,7 +36,7 @@
                 types: ["struct"]
             },
         ],
-        outputs:2,
+        outputs:4,
         outputInfo: [
 	        {
                 label: "productItems",
@@ -39,7 +44,15 @@
             },
             {
                 label: "setValue",
-                types: ["bool"]
+                types: ["bool","struct"]
+            },
+            {
+                label: "productItemsStatus",
+                types: ["struct"]
+            },
+            {
+                label: "productItemsActivityLog",
+                types: ["struct"]
             },
         ],
         icon: "worx.png",

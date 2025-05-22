@@ -3,14 +3,17 @@
     "label": {
       "name": "Name",
       "email": "Email",
-      "password": "Password"
+      "password": "Password",
+      "pollintervall": "Pollintervall"
     },
     "tip": "Tip: No public API Documentation is available.",
     "paletteHelp": "<p>Get an Set events from Worx devices.</p>",
     "help": "<p>This connects to the Worx API server and polls it for events from Worx devices.</p><p>In order to use this node, you need to enter your username an password.</p>",
-    "input1Description": "use this input to get all possible actions of your device. set a struct like this: {\"device}\":\"<yourDeviceId>\"} ",
-    "input2Description": "use this input to set a new value to your device. set a struct like this: {\"action\":\"light\", \"state\":1, \"device\":\"<yourDeviceId>\"} you can get the possible action and state values from the response of a getActions call",
-    "output1Description": "you receive the actual state of your devices",
-    "output2Description": "you receive the result of a getActions() call here."
+    "input1Description": "trigger this input to get all product items connected to your Worx account.",
+    "input2Description": "use this input to set a new value to your device. set a struct like this: {\"cmd\":1, \"objectId\":0}. objectId must be a given id in your product items. for cmd see this ENUM:enum Command : int { case PING = 0; case START = 1; case STOP = 2; case HOME = 3; case ZONE_SEARCH_REQ = 4; case LOCK = 5; case UNLOCK = 6; case RESET_LOG = 7; case PAUSE_OVER_WIRE = 8; case SAFE_HOMING = 9;}",
+    "output1Description": "shows your product items",
+    "output2Description": "you receive the result of set value here.",
+    "output3Description": "shows your product item status",
+    "output4Description": "shows your product item activity log"
   }
 }
